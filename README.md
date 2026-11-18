@@ -112,4 +112,23 @@ seed为交接演练夜场/午场分别提供EAST/WEST各80容量、最低1岗；
 
 当前范围：分区配置为固定记录，无临时撤岗/跨区调度/分区删除；要求的最低人数由经理给定。事件不通知外部医疗或安保，不是紧急呼救系统；处置由场务角色代录，未对齐个人登录身份。失物凭据按去首尾空白、不区分字母大小写的完整特征文本匹配，用于演示经理核对，无证件/照片识别或外部认领消息；认领姓名/凭据留本地数据库。原人工签到和运营演练数据范围继续适用。新证据在 `test-artifacts/gb-1025/v3/`。
 
+## 失物盘点与结案（第四轮扩展）
+
+10. 按位置盘点待结：领班按保管位置开启LostInventory，开启时把该位置当时全部在库（stored）失物固定为LostInventoryLine快照；新入库留到下次，不进入已固定清单。同一location最多一份open盘点，服务端行锁加数据库部分唯一索引双保险；空位置不能开启。逐件记实seen见在或missing缺失，差异说明写入line。盘点单带revision，逐件修订记实会升版本；旧版核对不能结案。盘点期间认领照常，交付钩子先把该件在open盘点内的明细直接写delivered并附claim_id，凭领取记录销账，不算缺失；停付件拒绝交付。
+11. 经理结案与缺失停付：经理按当前revision结案，要求无pending；结案时重核清单去向——任一件只要有handed_over领取记录就强制销账为delivered（盘点中误记缺失也纠正），其余missing件创建LostItemHold并随整单被sealed一起生效。丢失件停付是拒绝交付的唯一依据，须经理凭至少8字原因解除；解除只改停付，原ItemClaim与凭据原样保留，重复解除返回409。重新找回不重复建单。
+12. 并发口径：盘点记实/修订、单件交付、结案都按“盘点行→失物行→明细行”固定顺序加锁。交付与结案并发时，若领取记录先落库，结案重核会把它改成delivered且不建停付；若停付先生效，交付被拒，重试不会重复建单或重复解除停付。
+
+|接口|权限|
+|---|---|
+|GET /lost-inventories、/lost-holds|三角色读取待结、已封存、差异原因与停付去向|
+|POST /lost-inventories|admin/steward按保管位置开启待结盘点|
+|POST /lost-inventories/{id}/lines/{line_id}/mark|admin/steward逐件记实见在或缺失|
+|POST /lost-inventories/{id}/lines/{line_id}/revise|admin/steward修订记实并升版本（须带当前revision）|
+|POST /lost-inventories/{id}/seal|仅admin按匹配revision结案封存并停付缺失件|
+|POST /lost-holds/{id}/release|仅admin凭原因解除缺失停付|
+
+`lost_inventory_models.py`存放LostInventory/LostInventoryLine/LostItemHold三张表，`lost_inventory_service.py`实现固定清单、逐件记实、修订升版本、结案重核与停付解除；`lost_service.py`的交付路径接入盘点销账与停付拒绝。`create_all`新建三表，原失物与认领表没有新增列、无历史回填。失物页面同时展示待结盘点、已封存盘点、逐件差异原因与停付/解除记录，`constants.js`新增INVENTORY_STATES、LINE_RESULTS、HOLD_STATES。
+
+剧本：东入口值班台登记LOST-1118-01/02/03→领班按“东入口值班台”开启盘点（固定3件）→新登记LOST-1118-04留到下次→逐件记见在/缺失→期间认领人到场，经理核验交付其中一件，盘点明细自动销账→经理结案，剩余缺失件停付→找回后经理凭原因解除，原领取凭证保留。当前范围：位置按去首尾空白后的完整文本匹配，没有位置主数据或跨位置迁移；盘点只做一次固定清单与修订记实，不支持回滚已封存盘点；停付只拦交付，不冻结登记/认领申请；结案后新盘点重新取当时在库。新证据在 `test-artifacts/gb-1025/v4/`。
+
 MIT License。

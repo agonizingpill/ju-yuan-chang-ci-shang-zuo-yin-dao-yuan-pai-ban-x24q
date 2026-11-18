@@ -8,6 +8,7 @@ from src.debrief_models import ShowDebrief
 from src.zone_models import EntranceZone,ZonePost
 from src.incident_models import HouseIncident
 from src.lost_models import LostItem,ItemClaim
+from src.lost_inventory_models import LostInventory,LostInventoryLine,LostItemHold
 from src.auth import hash_password
 
 def seed():
@@ -47,5 +48,5 @@ def seed():
         for prod in s.scalars(select(Production).where(Production.code.in_(['NA-FLOOR','NA-MATINEE']))):
             for code in ['EAST','WEST']:
                 if not s.scalar(select(EntranceZone).where(EntranceZone.production_id==prod.id,EntranceZone.code==code)):s.add(EntranceZone(production_id=prod.id,code=code,capacity=80,required_staff=1,active=True))
-        s.commit();print({t.__tablename__:s.scalar(select(func.count()).select_from(t)) for t in (User,Production,Performance,CrewCall,StaffMember,CrewAssignment,ShowDebrief,EntranceZone,ZonePost,HouseIncident,LostItem,ItemClaim)})
+        s.commit();print({t.__tablename__:s.scalar(select(func.count()).select_from(t)) for t in (User,Production,Performance,CrewCall,StaffMember,CrewAssignment,ShowDebrief,EntranceZone,ZonePost,HouseIncident,LostItem,ItemClaim,LostInventory,LostInventoryLine,LostItemHold)})
 if __name__=='__main__':seed()

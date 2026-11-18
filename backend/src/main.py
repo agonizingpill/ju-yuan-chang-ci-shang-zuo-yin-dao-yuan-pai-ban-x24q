@@ -13,7 +13,7 @@ from .services import get,pack,audit,history,validate_history,invalidate,save_cr
 from .middlewares import RequestTrace,BurstGuard
 from .frontdesk_routes import router as frontdesk_router
 from .house_routes import router as house_router
-from .constants import ROLES,PERFORMANCE_STATES,CALL_STATES
+from .constants import ROLES,PERFORMANCE_STATES,CALL_STATES,INCIDENT_STATES,ITEM_STATES,INVENTORY_STATES,LINE_RESULTS,HOLD_STATES
 r=redis.Redis.from_url(os.environ['REDIS_URL'],decode_responses=True)
 @asynccontextmanager
 async def lifespan(app):
@@ -40,7 +40,7 @@ def login(p:Login,s=Depends(db_session)):
 @app.get('/me')
 def me(u=Depends(current)):return {'email':u.email,'role':u.role}
 @app.get('/enums')
-def enums(u=Depends(current)):return {'roles':ROLES,'performance_states':PERFORMANCE_STATES,'call_states':CALL_STATES}
+def enums(u=Depends(current)):return {'roles':ROLES,'performance_states':PERFORMANCE_STATES,'call_states':CALL_STATES,'incident_states':INCIDENT_STATES,'item_states':ITEM_STATES,'inventory_states':INVENTORY_STATES,'line_results':LINE_RESULTS,'hold_states':HOLD_STATES}
 @app.get('/productions')
 def productions(s=Depends(db_session),u=Depends(current)):return [pack(x) for x in s.scalars(select(Production).order_by(Production.id))]
 @app.post('/productions')

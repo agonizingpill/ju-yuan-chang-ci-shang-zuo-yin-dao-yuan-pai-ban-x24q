@@ -27,3 +27,16 @@ class ClaimInput(BaseModel):
     item_id:int
     claimant:str=Field(min_length=2,max_length=100,pattern=r'\S')
     proof:str=Field(min_length=4,max_length=1000,pattern=r'\S')
+class InventoryInput(BaseModel):
+    location:str=Field(min_length=2,max_length=100,pattern=r'\S')
+class InventoryMarkInput(BaseModel):
+    result:Literal['seen','missing']
+    note:str=Field(default='',max_length=1000)
+class InventoryReviseInput(BaseModel):
+    result:Literal['seen','missing']
+    note:str=Field(default='',max_length=1000)
+    inventory_revision:int=Field(ge=1)
+class SealInput(BaseModel):
+    revision:int=Field(ge=1)
+class HoldReleaseInput(BaseModel):
+    reason:str=Field(min_length=8,max_length=1000,pattern=r'\S')

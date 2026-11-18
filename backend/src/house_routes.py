@@ -5,9 +5,10 @@ from .auth import current,writers,admin
 from .zone_models import EntranceZone,ZonePost
 from .incident_models import HouseIncident
 from .lost_models import LostItem,ItemClaim
-from .house_schemas import ZoneInput,PostInput,IncidentInput,DispatchInput,ResolutionInput,LostInput,ClaimInput
+from .lost_inventory_models import LostInventory,LostItemHold
+from .house_schemas import ZoneInput,PostInput,IncidentInput,DispatchInput,ResolutionInput,LostInput,ClaimInput,InventoryInput,InventoryMarkInput,InventoryReviseInput,SealInput,HoldReleaseInput
 from .services import pack
-from . import zones_service as zones,incidents_service as incidents,lost_service as lost
+from . import zones_service as zones,incidents_service as incidents,lost_service as lost,lost_inventory_service as inventory
 router=APIRouter()
 @router.get('/entrance-zones')
 def list_zones(s=Depends(db_session),u=Depends(current)):return [pack(x) for x in s.scalars(select(EntranceZone).order_by(EntranceZone.id))]
@@ -49,3 +50,22 @@ def revise(id:int,d:ClaimInput,s=Depends(db_session),u=Depends(writers)):
 @router.post('/item-claims/{id}/handover')
 def handover(id:int,s=Depends(db_session),u=Depends(admin)):
     x=lost.handover(s,id,u);s.commit();return x
+@router.get('/lost-inventories')
+def inventories(s=Depends(db_session),u=Depends(current)):return [inventory.summary(s,x) for x in s.scalars(select(LostInventory).order_by(LostInventory.id.desc()))]
+@router.post('/lost-inventories')
+def open_inventory(d:InventoryInput,s=Depends(db_session),u=Depends(writers)):
+    x=inventory.open_inventory(s,d,u);s.commit();return x
+@router.post('/lost-inventories/{id}/lines/{line_id}/mark')
+def mark_line(id:int,line_id:int,d:InventoryMarkInput,s=Depends(db_session),u=Depends(writers)):
+    x=inventory.mark(s,id,line_id,d,u);s.commit();return x
+@router.post('/lost-inventories/{id}/lines/{line_id}/revise')
+def revise_line(id:int,line_id:int,d:InventoryReviseInput,s=Depends(db_session),u=Depends(writers)):
+    x=inventory.revise_line(s,id,line_id,d,u);s.commit();return x
+@router.post('/lost-inventories/{id}/seal')
+def seal_inventory(id:int,d:SealInput,s=Depends(db_session),u=Depends(admin)):
+    x=inventory.seal(s,id,d,u);s.commit();return x
+@router.get('/lost-holds')
+def holds(s=Depends(db_session),u=Depends(current)):return [inventory.hold_view(s,x) for x in s.scalars(select(LostItemHold).order_by(LostItemHold.id.desc()))]
+@router.post('/lost-holds/{id}/release')
+def release_hold(id:int,d:HoldReleaseInput,s=Depends(db_session),u=Depends(admin)):
+    x=inventory.release(s,id,d,u);s.commit();return x

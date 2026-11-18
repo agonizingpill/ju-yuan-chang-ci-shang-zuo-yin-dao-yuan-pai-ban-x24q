@@ -6,3 +6,6 @@ DEBRIEF_STATES=('draft','archived')
 
 INCIDENT_STATES=('open','assigned','resolved','closed')
 ITEM_STATES=('stored','handed_over')
+INVENTORY_STATES=('open','sealed')
+LINE_RESULTS=('pending','seen','missing','delivered')
+HOLD_STATES=('active','released')
